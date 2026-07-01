@@ -1,0 +1,36 @@
+provider "aws" {
+region = "us-east-1"
+alias = "usa"
+}
+
+provider "aws" {
+region = "ap-south-1"
+alias = "mumbai"
+}
+
+resource "aws_instance" "devops" {
+tags = {
+Name = "NV-instance"
+}
+provider = aws.usa
+ami = "ami-06067086cf86c58e6"
+instance_type = "t3.micro"
+key_name = "Krishav"
+availability_zone = "us-east-1a"
+root_block_device {
+volume_size = 10
+}
+}
+
+resource "aws_instance" "bombay" {
+tags = {
+Name = "Mumbai-instance"
+}
+provider = aws.mumbai
+ami = "ami-0d351f1b760a30161"
+instance_type = "t3.micro"
+availability_zone = "ap-south-1a"
+root_block_device {
+volume_size = 10
+}
+}

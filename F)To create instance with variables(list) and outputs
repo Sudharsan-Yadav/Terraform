@@ -1,0 +1,29 @@
+provider "aws" {
+  region = "us-east-1"
+}
+
+resource "aws_instance" "myserver" {
+  tags = {
+    Name = var.iname[count.index]
+  }
+  ami           = "ami-06067086cf86c58e6"
+  instance_type = var.itype[count.index]
+  key_name      = "Krishav"
+  count         = 2
+}
+
+variable "iname" {
+  type    = list(string)
+  default = ["server1", "server2"]
+}
+
+variable "itype" {
+  type    = list(string)
+  default = ["t3.micro", "c7i-flex.large"]
+}
+
+----------------------------------------------------------------------
+
+output "ips" {
+  value = [aws_instance.myserver[0].public_ip, aws_instance.myserver[1].private_ip]
+}

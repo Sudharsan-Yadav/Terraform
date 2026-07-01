@@ -1,0 +1,59 @@
+provider "aws" {
+  region = "us-east-1"
+}
+
+-------------------------------------------------------------------------
+
+resource "aws_instance" "myserver" {
+  tags = {
+    Name        = var.iname
+    Environment = var.ienv
+  }
+
+  ami           = var.ami_id
+  instance_type = var.itype ? "t3.micro" : "c7i-flex.large"
+  key_name      = var.ikey
+  count         = var.icount
+
+  root_block_device {
+    volume_size = var.ivolume
+  }
+}
+
+-------------------------------------------------------------------------
+
+variable "iname" {
+  description = "This is my instance name"
+  type        = string
+  default     = "Sudharsan"
+}
+
+variable "ienv" {
+  type    = string
+  default = "Prod"
+}
+
+variable "ami_id" {
+  type    = string
+  default = "ami-06067086cf86c58e6"
+}
+
+variable "itype" {
+  type    = bool
+  default = false
+}
+
+variable "ikey" {
+  type    = string
+  default = "Krishav"
+}
+
+variable "icount" {
+  type    = number
+  default = 1
+}
+
+variable "ivolume" {
+  type    = number
+  default = 10
+}

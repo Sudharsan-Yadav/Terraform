@@ -1,0 +1,26 @@
+provider "aws" {
+  region = "us-east-1"
+}
+
+-----------------------------------------------------------------------------------
+
+locals {
+  itype = {
+    dev = "t3.micro"
+    test = "c7i-flex.large"
+    prod = "m7i-flex.large"
+  }
+}
+
+resource "aws_instance" "myinstance" {
+  tags = {
+    Name = "${terraform.workspace}-Server"
+  }
+  ami = "ami-06067086cf86c58e6"
+  instance_type = local.itype[terraform.workspace]
+  key_name = "Krishav"
+  availability_zone = "us-east-1c"
+  root_block_device {
+    volume_size = 10
+  }
+}

@@ -1,0 +1,64 @@
+provider "aws" {
+  region = "us-east-1"
+}
+
+-----------------------------------------------------------------------------------------
+
+resource "aws_key_pair" "mykey" {
+  key_name   = "Sudharsan"
+  public_key = file("~/.ssh/id_rsa.pub")
+}
+
+resource "aws_instance" "myinstance" {
+  tags = {
+    Name = "MyServer"
+  }
+  ami                    = "ami-06067086cf86c58e6"
+  instance_type          = var.itype
+  count                  = 1
+  vpc_security_group_ids = [aws_security_group.mysg.id]
+  key_name               = aws_key_pair.mykey.key_name
+  provisioner "file" {
+    connection {
+      type        = "ssh"
+      user        = "ec2-user"
+      private_key = file("~/.ssh/id_rsa")
+      host        = self.public_ip
+    }
+    source = "/root/server-id.txt"
+    destination = "/home/ec2-user/server-id.txt"
+  }
+}
+
+variable "itype" {
+  type    = string
+  default = "t3.micro"
+}
+
+-----------------------------------------------------------------------------------------
+
+resource "aws_security_group" "mysg" {
+  name        = "Terraform_SG"
+  description = "It is created by terraform"
+
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "TCP"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "TCP"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}

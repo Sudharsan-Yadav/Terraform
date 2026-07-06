@@ -1,0 +1,26 @@
+locals {
+  itype = {
+    dev = "t3.micro"
+    test = "c7i-flex.large"
+    prod = "m7i-flex.large"
+  }
+}
+
+resource "aws_instance" "myinstance" {
+  tags = {
+    Name = "${terraform.workspace}-Server-FLM"
+  }
+  ami = "ami-06067086cf86c58e6"
+  instance_type = local.itype[terraform.workspace]
+  key_name = "Krishav"
+  availability_zone = "us-east-1c"
+  lifecycle {
+    create_before_destroy = true
+    prevent_destroy = true
+    ignore_changes = [tags]
+  }
+  count = 2
+  root_block_device {
+    volume_size = 10
+  }
+}

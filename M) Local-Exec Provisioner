@@ -1,0 +1,22 @@
+provider "aws" {
+  region = "us-east-1"
+}
+
+-----------------------------------------------------------------------------------
+
+resource "aws_instance" "myinstance" {
+  tags = {
+    Name = "MyServer"
+  }
+  ami = "ami-06067086cf86c58e6"
+  instance_type = var.itype
+  count = 1
+  provisioner "local-exec" {
+    command = "echo 'Instance created with ID: ${aws_instance.myinstance[count.index].id}' >> server-id.txt"
+  }
+}
+
+variable "itype" {
+  type = string
+  default = "t3.micro"
+}

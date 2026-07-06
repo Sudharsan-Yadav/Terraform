@@ -1,0 +1,19 @@
+provider "aws" {
+  region = "us-east-1"
+}
+
+-----------------------------------------------------------------------------------
+
+resource "aws_instance" "myinstance" {
+tags = {
+Name = "MyServer"
+}
+ami = "ami-06067086cf86c58e6"
+instance_type = var.itype
+}
+
+variable "itype" {
+type = string
+}
+
+terraform plan -var="itype=t3.micro"

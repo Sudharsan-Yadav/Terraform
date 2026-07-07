@@ -1,0 +1,26 @@
+provider "aws" {
+  region = "us-east-1"
+}
+
+-------------------------------------------------------------------------------------------
+
+resource "aws_s3_bucket" "mybucket" {
+  bucket = "aws.sudheer.2026"
+}
+
+resource "aws_s3_bucket_versioning" "bucketversioning" {
+  bucket = aws_s3_bucket.mybucket.id
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
+-------------------------------------------------------------------------------------------
+
+terraform {
+  backend "s3" {
+    bucket = "aws.sudheer.2026"
+    key    = "new/terraform.tfstate"
+    region = "us-east-1"
+  }
+}

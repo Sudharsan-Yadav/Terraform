@@ -1,0 +1,160 @@
+provider "aws" {
+  region = "us-east-1"
+}
+
+------------------------------------------------------------------
+
+resource "aws_vpc" "myvpc" {
+  tags = {
+    Name = "Terraform_VPC"
+  }
+  cidr_block           = "10.0.0.0/16"
+  instance_tenancy     = "default"
+  enable_dns_hostnames = "true"
+}
+
+------------------------------------------------------------------
+
+resource "aws_subnet" "subnet1" {
+  tags = {
+    Name = "Public-Subnet1"
+  }
+  vpc_id                  = aws_vpc.myvpc.id
+  cidr_block              = "10.0.0.0/24"
+  availability_zone       = "us-east-1a"
+  map_public_ip_on_launch = "true"
+}
+
+resource "aws_subnet" "subnet2" {
+  tags = {
+    Name = "Public-Subnet2"
+  }
+  vpc_id                  = aws_vpc.myvpc.id
+  cidr_block              = "10.0.1.0/24"
+  availability_zone       = "us-east-1b"
+  map_public_ip_on_launch = "true"
+}
+
+------------------------------------------------------------------
+
+resource "aws_internet_gateway" "myigw" {
+  tags = {
+    Name = "Terraform_IGW"
+  }
+  vpc_id = aws_vpc.myvpc.id
+}
+
+------------------------------------------------------------------
+
+resource "aws_route_table" "myrt" {
+  tags = {
+    Name = "Terraform_RT"
+  }
+  vpc_id = aws_vpc.myvpc.id
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.myigw.id
+  }
+}
+
+resource "aws_route_table_association" "subnet1_ass" {
+  subnet_id      = aws_subnet.subnet1.id
+  route_table_id = aws_route_table.myrt.id
+}
+resource "aws_route_table_association" "subnet2_ass" {
+  subnet_id      = aws_subnet.subnet2.id
+  route_table_id = aws_route_table.myrt.id
+}
+
+------------------------------------------------------------------
+
+resource "aws_security_group" "mysg" {
+  name        = "Terraform_SG"
+  description = "This is created by Terraform."
+  vpc_id      = aws_vpc.myvpc.id
+
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 8080
+    to_port     = 8080
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+------------------------------------------------------------------
+
+resource "aws_launch_template" "mylt" {
+  name                   = "Terraform_template"
+  description            = "This is created by Teraaform."
+  image_id               = "ami-002192a70217ac181"
+  instance_type          = "t3.micro"
+  key_name               = "Krishav"
+  vpc_security_group_ids = [aws_security_group.mysg.id]
+  placement {
+    availability_zone = "us-east-1a"
+  }
+  user_data = base64encode(<<-EOF
+#!/bin/bash
+sudo yum update -y
+sudo yum install httpd -y
+sudo systemctl start httpd
+sudo systemctl enable httpd
+sudo systemctl restart httpd
+sudo chmod 766 /var/www/html/index.html
+sudo echo "<html><body><h1>Welcome to Terraform Scaling</h1></body></html>" > /var/www/html/index.html
+EOF
+  )
+}
+
+------------------------------------------------------------------
+
+resource "aws_elb" "mylb" {
+  name            = "Terraform-LB"
+  subnets         = [aws_subnet.subnet1.id, aws_subnet.subnet2.id]
+  security_groups = [aws_security_group.mysg.id]
+  listener {
+    instance_port     = 80
+    instance_protocol = "http"
+    lb_port           = 80
+    lb_protocol       = "http"
+  }
+  tags = {
+    Name = "Terraform-LB"
+    Env  = "Dev"
+  }
+}
+
+------------------------------------------------------------------
+
+resource "aws_autoscaling_group" "myasg" {
+  name = "Terraform_ASG"
+  launch_template {
+    id = aws_launch_template.mylt.id
+  }
+  desired_capacity    = 4
+  min_size            = 2
+  max_size            = 8
+  vpc_zone_identifier = [aws_subnet.subnet1.id, aws_subnet.subnet2.id]
+  load_balancers      = [aws_elb.mylb.name]
+}

@@ -3,3 +3,30 @@ provider "aws" {
 }
 
 ---------------------------------------------------------------------------------------------
+
+resource "aws_security_group" "mysg" {
+  name        = "Terraform-SG"
+  description = "This is created with dynamic blocks"
+
+  dynamic "ingress" {
+    for_each = var.ports
+    content {
+      from_port   = ingress.value
+      to_port     = ingress.value
+      protocol    = "TCP"
+      cidr_blocks = ["0.0.0.0/0"]
+    }
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+variable "ports" {
+  type    = list(number)
+  default = [22, 80, 8080, 3306, 9000]
+}

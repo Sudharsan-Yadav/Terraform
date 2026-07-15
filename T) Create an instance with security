@@ -1,0 +1,22 @@
+provider "aws" {
+  region = "us-east-1"
+}
+
+------------------------------------------------------------------------------------------
+
+resource "aws_instance" "myinstance" {
+  tags = {
+    Name = "Terraform_Instance"
+  }
+  ami               = "ami-01edba92f9036f76e"
+  instance_type     = "t3.micro"
+  key_name          = "Krishav"
+  availability_zone = "us-east-1a"
+  root_block_device {
+    volume_size = 10
+    encrypted = true
+  }
+  metadata_options {
+    http_tokens = "required"
+  }
+}

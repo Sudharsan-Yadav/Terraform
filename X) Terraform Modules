@@ -1,0 +1,98 @@
+├── main.tf
+├── modules
+│   ├── dev
+│   │   ├── compute
+│   │   │   ├── main.tf
+│   │   │   ├── outputs.tf
+│   │   │   └── variables.tf
+│   │   ├── network
+│   │   └── storage
+│   │       ├── main.tf
+│   │       └── variables.tf
+│   ├── prod
+│   └── test
+├── provider.tf
+└── terraform.tfstate
+
+----------------------------------------------------------------------------
+
+module "dev_compute" {
+  source = "./modules/dev/compute"
+  ami_id = "ami-01edba92f9036f76e"
+  itype  = "t3.micro"
+  iname  = "modules_dev_server"
+}
+
+module "dev_storage" {
+  source      = "./modules/dev/storage"
+  bucket_name = "modules.terraform.bucket777"
+}
+
+----------------------------------------------------------------------------
+
+provider "vault" {
+  address = "http://54.224.10.139:8200/"
+  token   = var.mytoken
+}
+
+variable "mytoken" {
+  type      = string
+  sensitive = true
+}
+
+provider "aws" {
+  region     = "us-east-1"
+  access_key = data.vault_generic_secret.aws.data["access_key"]
+  secret_key = data.vault_generic_secret.aws.data["secret_key"]
+}
+
+data "vault_generic_secret" "aws" {
+  path = "secret/mysecret"
+}
+
+----------------------------------------------------------------------------
+---------------------------------DEV----------------------------------------
+-------------------------------COMPUTE--------------------------------------
+
+resource "aws_instance" "myserver" {
+  tags = {
+    Name = var.iname
+  }
+  ami           = var.ami_id
+  instance_type = var.itype
+}
+
+----------------------------------------------------------------------------
+
+variable "ami_id" {
+  type = string
+}
+
+variable "itype" {
+  type = string
+}
+
+variable "iname" {
+  type = string
+}
+
+----------------------------------------------------------------------------
+
+output "devops" {
+  value = [aws_instance.myserver.public_ip, aws_instance.myserver.private_ip]
+}
+
+----------------------------------------------------------------------------
+---------------------------------DEV----------------------------------------
+-------------------------------STORAGE--------------------------------------
+
+resource "aws_s3_bucket" "mybucket" {
+  bucket = var.bucket_name
+}
+
+----------------------------------------------------------------------------
+
+variable "bucket_name" {
+  type = string
+}
+

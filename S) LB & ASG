@@ -157,4 +157,9 @@ resource "aws_autoscaling_group" "myasg" {
   max_size            = 8
   vpc_zone_identifier = [aws_subnet.subnet1.id, aws_subnet.subnet2.id]
   load_balancers      = [aws_elb.mylb.name]
+  tag {
+    key = "Name"
+    value = "ASG-Server"
+    propagate_at_launch = true
+  }
 }
